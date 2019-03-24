@@ -5,12 +5,13 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"path"
 )
 
 type Store interface {
 	Offsets() (map[string]int64, error)
-	ReaderFrom(name string, offset int64) (io.Reader, error)
-	Appender(name string) (io.Writer, error)
+	ReaderFrom(name string, offset int64) (io.ReadCloser, error)
+	Appender(name string) (io.WriteCloser, error)
 }
 
 type fileStore struct {
@@ -42,10 +43,21 @@ func (f *fileStore) Offsets() (map[string]int64, error) {
 	return offsets, nil
 }
 
-func (*fileStore) ReaderFrom(name string, offset int64) (io.Reader, error) {
-	return nil, nil
+func (f *fileStore) ReaderFrom(name string, offset int64) (io.ReadCloser, error) {
+	filename := path.Join(f.path, name)
+	file, err := os.Open(filename)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open %s: %s", filename, err)
+	}
+
+	_, err = file.Seek(offset, 0)
+	if err != nil {
+		return nil, fmt.Errorf("failed to seek %s: %s", filename, err)
+	}
+
+	return file, nil
 }
 
-func (*fileStore) Appender(name string) (io.Writer, error) {
+func (*fileStore) Appender(name string) (io.WriteCloser, error) {
 	return nil, nil
 }
