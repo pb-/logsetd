@@ -59,3 +59,30 @@ func WriteSliceInfo(w io.Writer, name string, offset int64, length int64) error 
 
 	return nil
 }
+
+func ReadSliceInfo(r *bufio.Reader) (name string, offset int64, length int64, err error) {
+	line, err := r.ReadString('\n')
+	if err != nil {
+		return "", 0, 0, err
+	}
+
+	parts := strings.Split(strings.TrimSpace(line), " ")
+	if len(parts) != 3 {
+		return "", 0, 0, fmt.Errorf("bad slice info: %d parts", len(parts))
+	}
+
+	name = parts[0]
+	// TODO: check \w+
+
+	offset, err = strconv.ParseInt(parts[1], 10, 64)
+	if err != nil {
+		return "", 0, 0, err
+	}
+
+	length, err = strconv.ParseInt(parts[2], 10, 64)
+	if err != nil {
+		return "", 0, 0, err
+	}
+
+	return
+}

@@ -27,3 +27,23 @@ func TestOffsets(t *testing.T) {
 		t.Fatal("not equal")
 	}
 }
+
+func TestSliceInfo(t *testing.T) {
+	name := "foo"
+	offset := int64(1)
+	length := int64(9001)
+
+	r, w := io.Pipe()
+	go func() {
+		WriteSliceInfo(w, name, offset, length)
+	}()
+
+	rName, rOffset, rLength, err := ReadSliceInfo(bufio.NewReader(r))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if name != rName || offset != rOffset || length != rLength {
+		t.Fatalf("not equal: %s %d %d", rName, rOffset, rLength)
+	}
+}

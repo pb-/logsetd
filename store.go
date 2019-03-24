@@ -50,7 +50,7 @@ func (f *fileStore) ReaderFrom(name string, offset int64) (io.ReadCloser, error)
 		return nil, fmt.Errorf("failed to open %s: %s", filename, err)
 	}
 
-	_, err = file.Seek(offset, 0)
+	_, err = file.Seek(offset, io.SeekStart)
 	if err != nil {
 		return nil, fmt.Errorf("failed to seek %s: %s", filename, err)
 	}
@@ -58,6 +58,12 @@ func (f *fileStore) ReaderFrom(name string, offset int64) (io.ReadCloser, error)
 	return file, nil
 }
 
-func (*fileStore) Appender(name string) (io.WriteCloser, error) {
-	return nil, nil
+func (f *fileStore) Appender(name string) (io.WriteCloser, error) {
+	filename := path.Join(f.path, name)
+	file, err := os.OpenFile(filename, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open %s: %s", filename, err)
+	}
+
+	return file, nil
 }
