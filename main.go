@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"path"
+	"regexp"
 	"strings"
 	"sync"
 )
@@ -14,8 +15,8 @@ type contextKey string
 
 // writeLock ensures there is only one writer; note that reading can happen concurrently
 var writeLock sync.Mutex
-
 var configKey = contextKey("config")
+var alnum = regexp.MustCompile(`^[[:alnum:]]+$`)
 
 func route(w http.ResponseWriter, r *http.Request) {
 	c := r.Context().Value(configKey).(*config)
@@ -28,7 +29,10 @@ func route(w http.ResponseWriter, r *http.Request) {
 	}
 
 	repo := parts[0]
-	// TODO check if \w+
+	if !alnum.MatchString(repo) {
+		http.NotFound(w, r)
+		return
+	}
 
 	store, err := NewFileStore(path.Join(c.storePath, repo))
 	if err != nil {

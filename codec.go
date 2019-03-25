@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"io"
 	"strconv"
@@ -42,14 +43,21 @@ func ReadOffsets(r *bufio.Reader) (map[string]int64, error) {
 			return nil, fmt.Errorf("bad offset line: %d parts", len(parts))
 		}
 
+		name := parts[0]
 		offset, err := strconv.ParseInt(strings.TrimSpace(parts[1]), 10, 64)
 		if err != nil {
 			return nil, err
 		}
 
-		// TODO check >= 0
+		if offset < 0 {
+			return nil, errors.New("offset must be positive")
+		}
 
-		offsets[parts[0]] = offset
+		if !alnum.MatchString(name) {
+			return nil, errors.New("bad name")
+		}
+
+		offsets[name] = offset
 	}
 }
 
@@ -65,28 +73,38 @@ func WriteSliceInfo(w io.Writer, name string, offset int64, length int64) error 
 func ReadSliceInfo(r *bufio.Reader) (name string, offset int64, length int64, err error) {
 	line, err := r.ReadString('\n')
 	if err != nil {
-		return "", 0, 0, err
+		return
 	}
 
 	parts := strings.Split(strings.TrimSpace(line), " ")
 	if len(parts) != 3 {
-		return "", 0, 0, fmt.Errorf("bad slice info: %d parts", len(parts))
+		err = fmt.Errorf("bad slice info: %d parts", len(parts))
+		return
 	}
 
 	name = parts[0]
-	// TODO: check \w+
+	if !alnum.MatchString(name) {
+		err = errors.New("bad name")
+		return
+	}
 
 	offset, err = strconv.ParseInt(parts[1], 10, 64)
 	if err != nil {
-		return "", 0, 0, err
+		return
 	}
-	// TODO check >= 0
+	if offset < 0 {
+		err = errors.New("offset must be positive")
+		return
+	}
 
 	length, err = strconv.ParseInt(parts[2], 10, 64)
 	if err != nil {
-		return "", 0, 0, err
+		return
 	}
-	// TODO check >= 0
+	if length < 0 {
+		err = errors.New("length must be positive")
+		return
+	}
 
 	return
 }

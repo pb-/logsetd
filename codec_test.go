@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"io"
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -28,6 +29,20 @@ func TestOffsets(t *testing.T) {
 	}
 }
 
+func TestOffsetsBad(t *testing.T) {
+	badInputs := []string{
+		"name_ 0\n\n",
+		"name -1\n\n",
+	}
+
+	for _, input := range badInputs {
+		_, err := ReadOffsets(bufio.NewReader(strings.NewReader(input)))
+		if err == nil {
+			t.Fatalf("should fail: %s", input)
+		}
+	}
+}
+
 func TestSliceInfo(t *testing.T) {
 	name := "foo"
 	offset := int64(1)
@@ -45,5 +60,20 @@ func TestSliceInfo(t *testing.T) {
 
 	if name != rName || offset != rOffset || length != rLength {
 		t.Fatalf("not equal: %s %d %d", rName, rOffset, rLength)
+	}
+}
+
+func TestSliceInfoBad(t *testing.T) {
+	badInputs := []string{
+		"name_ 0 0\n",
+		"name -1 0\n",
+		"name 0 -1\n",
+	}
+
+	for _, input := range badInputs {
+		_, _, _, err := ReadSliceInfo(bufio.NewReader(strings.NewReader(input)))
+		if err == nil {
+			t.Fatalf("should fail: %s", input)
+		}
 	}
 }
