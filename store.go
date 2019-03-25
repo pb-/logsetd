@@ -37,7 +37,9 @@ func (f *fileStore) Offsets() (map[string]int64, error) {
 
 	offsets := map[string]int64{}
 	for _, file := range files {
-		offsets[file.Name()] = file.Size()
+		if !file.IsDir() {
+			offsets[file.Name()] = file.Size()
+		}
 	}
 
 	return offsets, nil

@@ -47,6 +47,8 @@ func ReadOffsets(r *bufio.Reader) (map[string]int64, error) {
 			return nil, err
 		}
 
+		// TODO check >= 0
+
 		offsets[parts[0]] = offset
 	}
 }
@@ -78,11 +80,13 @@ func ReadSliceInfo(r *bufio.Reader) (name string, offset int64, length int64, er
 	if err != nil {
 		return "", 0, 0, err
 	}
+	// TODO check >= 0
 
 	length, err = strconv.ParseInt(parts[2], 10, 64)
 	if err != nil {
 		return "", 0, 0, err
 	}
+	// TODO check >= 0
 
 	return
 }

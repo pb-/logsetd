@@ -2,6 +2,9 @@ package main
 
 import (
 	"bufio"
+	"context"
+	"crypto/rand"
+	"encoding/base32"
 	"fmt"
 	"io"
 	"log"
@@ -12,11 +15,15 @@ import (
 	"sync"
 )
 
+type contextKey string
+
 // writeLock ensures there is only one writer; note that reading can happen concurrently
 var writeLock sync.Mutex
 
+var configKey = contextKey("config")
+
 func badRequest(w http.ResponseWriter, err error) {
-	log.Printf("bad request: %s\n", err)
+	log.Printf("bad request: %s", err)
 	http.Error(w, "Bad request", http.StatusBadRequest)
 }
 
@@ -130,6 +137,7 @@ func handleOffsets(store Store, w http.ResponseWriter, r *http.Request) {
 }
 
 func route(w http.ResponseWriter, r *http.Request) {
+	c := r.Context().Value(configKey).(*config)
 	w.Header().Set("Content-Type", "application/octet-stream")
 
 	parts := strings.Split(r.URL.Path[1:], "/")
@@ -141,9 +149,9 @@ func route(w http.ResponseWriter, r *http.Request) {
 	repo := parts[0]
 	// TODO check if \w+
 
-	store, err := NewFileStore(path.Join(os.Getenv("LOGSET_STORE"), repo))
+	store, err := NewFileStore(path.Join(c.storePath, repo))
 	if err != nil {
-		log.Printf("error creating store: %s\n", err)
+		log.Printf("error creating store: %s", err)
 		http.NotFound(w, r)
 		return
 	}
@@ -160,13 +168,46 @@ func route(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func main() {
-	if os.Getenv("LOGSET_STORE") == "" {
-		log.Fatal("LOGSET_STORE is not set, exiting")
+func randomKey(length int) string {
+	key := make([]byte, length)
+	rand.Read(key)
+	return base32.StdEncoding.EncodeToString(key)
+}
+
+type config struct {
+	storePath string
+	initKey   string
+}
+
+func newConfig() *config {
+	c := &config{
+		storePath: os.Getenv("LOGSET_STORE"),
+		initKey:   os.Getenv("LOGSET_INIT_KEY"),
 	}
+
+	if c.storePath == "" {
+		log.Fatal("LOGSET_STORE not set, exiting")
+	}
+
+	if c.initKey == "" {
+		c.initKey = randomKey(15)
+		log.Printf("LOGSET_INIT_KEY not set, using random key %s", c.initKey)
+	}
+
+	return c
+}
+
+func withConfig(c *config, next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		next(w, r.WithContext(context.WithValue(r.Context(), configKey, c)))
+	}
+}
+
+func main() {
+	config := newConfig()
 
 	log.Println("server started")
 
-	http.HandleFunc("/", route)
+	http.HandleFunc("/", withConfig(config, route))
 	log.Fatal(http.ListenAndServe(":4004", nil))
 }
