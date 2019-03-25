@@ -3,7 +3,9 @@
 logsetd implements a daemon for the logset protocol.
 
 ```shell
-make develop  # to get started
+make develop  # build & run server
+make test     # run tests
+make build    # build binary
 ```
 
 
