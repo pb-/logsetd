@@ -1,6 +1,6 @@
 # logsetd
 
-logsetd implements a daemon for the logset protocol.
+logsetd implements a daemon for the logset protocol. Use [logset](https://github.com/pb-/logset) to synchronize two daemon instances.
 
 ```shell
 make develop  # build & run server
@@ -35,3 +35,8 @@ name := [0-9a-zA-Z]+
 integer := [0-9]*
 byte is an arbitrary byte
 ```
+
+
+### Synchronization process
+
+Best explained [in code](https://github.com/pb-/logset/blob/ec6ca9a56844546d19d9af19968bb70fbc4a400c/logset/sync.py#L50) (less than 10 lines!).
