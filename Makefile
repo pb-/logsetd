@@ -9,4 +9,4 @@ test:
 	mkdir .data
 
 develop: logsetd .data
-	LOGSET_STORE=.data ./logsetd
+	LOGSETD_STORE=.data ./logsetd

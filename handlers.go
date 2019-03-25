@@ -6,7 +6,11 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"sync"
 )
+
+// writeLock ensures there is only one writer; note that reading can happen concurrently
+var writeLock sync.Mutex
 
 func handlePush(store Store, w http.ResponseWriter, req *http.Request) {
 	writeLock.Lock()

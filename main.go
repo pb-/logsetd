@@ -2,19 +2,18 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
 	"path"
 	"regexp"
+	"strconv"
 	"strings"
-	"sync"
 )
 
 type contextKey string
 
-// writeLock ensures there is only one writer; note that reading can happen concurrently
-var writeLock sync.Mutex
 var configKey = contextKey("config")
 var alnum = regexp.MustCompile(`^[[:alnum:]]+$`)
 
@@ -55,15 +54,26 @@ func route(w http.ResponseWriter, r *http.Request) {
 
 type config struct {
 	storePath string
+	port      int
 }
 
 func newConfig() *config {
 	c := &config{
-		storePath: os.Getenv("LOGSET_STORE"),
+		storePath: os.Getenv("LOGSETD_STORE"),
 	}
 
 	if c.storePath == "" {
-		log.Fatal("LOGSET_STORE not set, exiting")
+		log.Fatal("LOGSETD_STORE not set, exiting")
+	}
+
+	if port := os.Getenv("LOGSETD_PORT"); port != "" {
+		p, err := strconv.ParseUint(port, 10, 16)
+		if err != nil {
+			log.Fatalf("LOGSETD_PORT malformed: %s, exiting", err)
+		}
+		c.port = int(p)
+	} else {
+		c.port = 4004
 	}
 
 	return c
@@ -78,8 +88,8 @@ func withConfig(c *config, next http.HandlerFunc) http.HandlerFunc {
 func main() {
 	config := newConfig()
 
-	log.Println("server started")
+	log.Printf("server started on port %d", config.port)
 
 	http.HandleFunc("/", withConfig(config, route))
-	log.Fatal(http.ListenAndServe(":4004", nil))
+	log.Fatal(http.ListenAndServe(fmt.Sprintf("127.0.0.1:%d", config.port), nil))
 }
