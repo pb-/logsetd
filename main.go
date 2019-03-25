@@ -2,8 +2,6 @@ package main
 
 import (
 	"context"
-	"crypto/rand"
-	"encoding/base32"
 	"log"
 	"net/http"
 	"os"
@@ -51,30 +49,17 @@ func route(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func randomKey(length int) string {
-	key := make([]byte, length)
-	rand.Read(key)
-	return base32.StdEncoding.EncodeToString(key)
-}
-
 type config struct {
 	storePath string
-	initKey   string
 }
 
 func newConfig() *config {
 	c := &config{
 		storePath: os.Getenv("LOGSET_STORE"),
-		initKey:   os.Getenv("LOGSET_INIT_KEY"),
 	}
 
 	if c.storePath == "" {
 		log.Fatal("LOGSET_STORE not set, exiting")
-	}
-
-	if c.initKey == "" {
-		c.initKey = randomKey(15)
-		log.Printf("LOGSET_INIT_KEY not set, using random key %s", c.initKey)
 	}
 
 	return c
