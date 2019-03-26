@@ -39,4 +39,23 @@ byte is an arbitrary byte
 
 ### Synchronization process
 
-Best explained [in code](https://github.com/pb-/logset/blob/ec6ca9a56844546d19d9af19968bb70fbc4a400c/logset/sync.py#L50) (less than 10 lines!).
+Best explained [in code](https://github.com/pb-/logset/blob/ec6ca9a56844546d19d9af19968bb70fbc4a400c/logset/sync.py#L50) (less than 10 lines!) or in this ASCII-art graphic:
+
+```
+local                          sync                           remote
+
+      < offsets()              (1)
+      local_off >
+                               (2)          pull(local_off) >
+                                    < remote_off, remote_data
+      < push(remote_data)      (3)
+
+      < pull(remote_off)       (4)
+      local_off', local_data >
+                               (5)         push(local_data) >
+```
+
+Note that
+
+ * the roles of `local` and `remote` are completely arbitrary. However, since there are fewer round trips on the right-hand side, it makes sense to have the remote peer on the right.
+ * steps (3) and (5) will only happen if there is data to transfer, reducing the remote side to one round trip in the no-update case.
